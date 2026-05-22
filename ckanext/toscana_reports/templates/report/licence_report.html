@@ -24,7 +24,7 @@
       {% set truncate = 10 %}
       {{ titles|length }}:
       {% for name in names[:truncate] %}
-        <a href="{{ h.url_for(controller='package', action='read', id=name) }}">{{ titles[loop.index0] }}</a> &nbsp;
+        <a href="{{ h.url_for('dataset.read', id=name) }}">{{ titles[loop.index0] }}</a> &nbsp;
       {% endfor %}
       {% if names|length > truncate %}
          ...
