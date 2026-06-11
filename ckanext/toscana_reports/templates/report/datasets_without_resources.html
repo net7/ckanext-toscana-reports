@@ -1,38 +1,39 @@
-  <div class="widget-container">
+<div class="rtds-stats-box">
+  <p class="rtds-stats-box__main">Dataset senza risorse: {{ data['table']|length }}</p>
+  <p>"URL ultima risorsa" è vuoto se il dataset non ha uno storico associato.</p>
+  <p class="rtds-stats-box__note">La lista completa dei dataset è scaricabile in formato JSON e CSV</p>
+</div>
 
-      <p>
-        Numero di dataset senza risorses: {{data['table']|length}}
-      </p>
-      <p>
-        NB: "URL ultima risorsa" &egrave; vuoto se il dataset non ha uno storico associato.
-      </p>
-
-      <table class="table table-bordered table-condensed tablesorter" id="report-table" style="width: 100%;table-layout:fixed; margin-top: 8px;">
-            <thead>
-              <tr>
-                <th style="width: 80px">Dataset</th>
-                <!-- <th style="width: 80px">Organization</th> -->
-                <th style="width: 50px">Note</th>
-                <th style="width: 50px">Data creazione</th>
-                <th style="width: 50px">Date modifica</th>
-                <th style="width: 50px">Date ultima risorsa cancellata</th>
-                <th style="width: 100px">URL ultima risorsa</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for dataset in data['table'] %}
-                  <tr>
-                      <td><a href="/dataset/{{dataset['name']}}">{{dataset['title']}}</a></td>
-                      <!-- <td><a href="/publisher/{{dataset['organization name']}}">{{dataset['organization title']}}</a></td> -->
-                      <td>{{dataset['dataset_notes']}}</td>
-                      <td>{{h.render_datetime(dataset['metadata created'], date_format='%d/%m/%Y')}}</td>
-                      <td>{{h.render_datetime(dataset['metadata modified'], date_format='%d/%m/%Y')}}</td>
-                      <td>{{h.render_datetime(dataset['last resource deleted'], date_format='%d/%m/%Y')}}</td>
-                      <td style="overflow: hidden; text-overflow: ellipsis"><a href="{{dataset['last resource url']}}">{{dataset['last resource url']}}</a></td>
-                  </tr>
-              {% endfor %}
-            </tbody>
-      </table>
-
-  </div>
-
+<div class="rtds-table-wrapper">
+  <table class="rtds-report-table tablesorter" id="report-table" aria-label="Elenco dataset senza risorse">
+    <thead>
+      <tr>
+        <th scope="col">Dataset</th>
+        <th scope="col">Note</th>
+        <th scope="col">Data creazione</th>
+        <th scope="col">Data modifica</th>
+        <th scope="col">Data ultima risorsa cancellata</th>
+        <th scope="col">URL ultima risorsa</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dataset in data['table'] %}
+      <tr>
+        <td><a href="{{ h.url_for('dataset.read', id=dataset['name']) }}">{{ dataset['title'] }}</a></td>
+        <td>{{ dataset['dataset_notes'] or '—' }}</td>
+        <td>{{ h.render_datetime(dataset['metadata created'], date_format='%d/%m/%Y') }}</td>
+        <td>{{ h.render_datetime(dataset['metadata modified'], date_format='%d/%m/%Y') }}</td>
+        <td>{{ h.render_datetime(dataset['last resource deleted'], date_format='%d/%m/%Y') }}</td>
+        <td>
+          {% if dataset['last resource url'] %}
+            <a href="{{ dataset['last resource url'] }}" style="overflow-wrap:break-word;word-break:break-all;">{{ dataset['last resource url'] }}</a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="rtds-table-count">Totale: <strong>{{ data['table']|length }}</strong> dataset</p>

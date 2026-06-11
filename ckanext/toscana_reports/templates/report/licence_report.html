@@ -1,36 +1,34 @@
-<ul>
-  <li>Dataset: {{data['num_datasets']}}</li>
-  <li>Licenze: {{data['num_licences']}}</li>
-</ul>
+<div class="rtds-stats-box">
+  <p class="rtds-stats-box__main">Dataset: {{ data['num_datasets'] }}</p>
+  <p>Licenze: {{ data['num_licences'] }}</p>
+  <p class="rtds-stats-box__note">I Dataset non pubblicati sono esclusi da questo report</p>
+</div>
 
-<p><em>I Dataset non pubblicati sono esclusi da questo report</em></p>
-
-<table class="table table-bordered table-condensed" id="report-table" style="width: 100%; table-layout: fixed;">
-  <thead>
-    <tr class="js-tooltip">
-    <th style="width: 150px">Licenza</th>
-    <!-- <th style="width: 400px">Custom terms</th> -->
-    <th style="">Datasets</th>
-    </tr>
-  </thead>
-  <tbody style="word-wrap: break-word;">
-    {% for row_dict in data['table'] %}
-    <tr>
-    <td>{{row_dict['license_title']}} {% if not row_dict['license_title'] and row_dict['licence'] %}(Custom){% endif %}</td>
-    <!-- <td>{{row_dict['licence']}}</td> -->
-    <td>
-      {% set names = row_dict['dataset_names'].split() %}
-      {% set titles = row_dict['dataset_titles'].split('|') %}
-      {% set truncate = 10 %}
-      {{ titles|length }}:
-      {% for name in names[:truncate] %}
-        <a href="{{ h.url_for('dataset.read', id=name) }}">{{ titles[loop.index0] }}</a> &nbsp;
+<div class="rtds-table-wrapper">
+  <table class="rtds-report-table" id="report-table" aria-label="Report licenze">
+    <thead>
+      <tr>
+        <th scope="col">Licenza</th>
+        <th scope="col">Dataset</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row_dict in data['table'] %}
+      <tr>
+        <td>{{ row_dict['license_title'] }}{% if not row_dict['license_title'] and row_dict['licence'] %} (Custom){% endif %}</td>
+        <td>
+          {% set names = row_dict['dataset_names'].split() %}
+          {% set titles = row_dict['dataset_titles'].split('|') %}
+          {% set truncate = 10 %}
+          {{ titles|length }}:
+          {% for name in names[:truncate] %}
+            <a href="{{ h.url_for('dataset.read', id=name) }}">{{ titles[loop.index0] }}</a>
+            {% if not loop.last or names|length > truncate %}&nbsp;{% endif %}
+          {% endfor %}
+          {% if names|length > truncate %}…{% endif %}
+        </td>
+      </tr>
       {% endfor %}
-      {% if names|length > truncate %}
-         ...
-      {% endif %}
-    </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+</div>

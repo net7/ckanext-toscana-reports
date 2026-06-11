@@ -1,31 +1,29 @@
-<div class="widget-container">
-  <ul>
-    <li>Dataset in PDF: {{data['num_datasets_only_pdf']}} / {{data['num_datasets_published']}} ({{ '{:.0%}'.format(data['num_datasets_only_pdf']/data['num_datasets_published']) }})</li>
-    <li>Publishers with datasets only in PDF: {{table|length}}</li>
-  </ul>
-  <p>N.B. La lista completa dei dataset &egrave; scaricabile in formato JSON e CSV</p>
-
-
-      <table class="table table-bordered table-condensed tablesorter" id="report-table" style="width: 100%;table-layout:fixed; margin-top: 8px;">
-            <thead>
-              <tr>
-                <th style="width: 80px">Dataset</th>
-                <th style="width: 50px">Note</th>
-                <th style="width: 50px">Date creazione</th>
-                <th style="width: 50px">Date modifica</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for dataset in data['table'] %}
-                  <tr>
-                      <td><a href="/dataset/{{dataset['name']}}">{{dataset['title']}}</a></td>
-                      <td>{{dataset['dataset_notes']}}</td>
-                      <td>{{h.render_datetime(dataset['metadata created'], date_format='%d/%m/%Y')}}</td>
-                      <td>{{h.render_datetime(dataset['metadata modified'], date_format='%d/%m/%Y')}}</td>
-                  </tr>
-              {% endfor %}
-            </tbody>
-      </table>
-
+<div class="rtds-stats-box">
+  <p class="rtds-stats-box__main">Dataset in PDF: {{ data['num_datasets_only_pdf'] }} / {{ data['num_datasets_published'] }} ({{ '{:.0%}'.format(data['num_datasets_only_pdf'] / data['num_datasets_published']) if data['num_datasets_published'] else '0%' }})</p>
+  <p>Publisher con dataset esclusivamente in PDF: {{ table|length }}</p>
+  <p class="rtds-stats-box__note">La lista completa dei dataset è scaricabile in formato JSON e CSV</p>
 </div>
 
+<div class="rtds-table-wrapper">
+  <table class="rtds-report-table tablesorter" id="report-table" aria-label="Elenco dataset PDF">
+    <thead>
+      <tr>
+        <th scope="col">Dataset</th>
+        <th scope="col">Note</th>
+        <th scope="col">Data creazione</th>
+        <th scope="col">Data modifica</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dataset in data['table'] %}
+      <tr>
+        <td><a href="{{ h.url_for('dataset.read', id=dataset['name']) }}">{{ dataset['title'] }}</a></td>
+        <td>{{ dataset['dataset_notes'] or '—' }}</td>
+        <td>{{ h.render_datetime(dataset['metadata created'], date_format='%d/%m/%Y') }}</td>
+        <td>{{ h.render_datetime(dataset['metadata modified'], date_format='%d/%m/%Y') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="rtds-table-count">Totale: <strong>{{ data['table']|length }}</strong> dataset</p>
