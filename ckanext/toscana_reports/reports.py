@@ -4,6 +4,7 @@ import logging
 import os
 
 from paste.deploy.converters import asbool
+from sqlalchemy.orm import selectinload
 
 from ckan import model
 from collections import OrderedDict
@@ -173,17 +174,34 @@ def last_resource_deleted(pkg):
         previous_rr = rr
     return None, ''
 
+def _load_extras(keys):
+    '''Carica in un'unica query gli extras con le chiavi indicate per tutti i
+    package, come dict {package_id: {key: value}}: evita il lazy load di
+    pkg.extras (una query per package) nei loop dei report.'''
+    rows = model.Session.query(model.PackageExtra.package_id,
+                               model.PackageExtra.key,
+                               model.PackageExtra.value)\
+        .filter(model.PackageExtra.key.in_(keys))
+    extras_by_pkg = {}
+    for package_id, key, value in rows:
+        extras_by_pkg.setdefault(package_id, {})[key] = value
+    return extras_by_pkg
+
+
 def datasets_without_resources(organization, include_sub_organizations=False):
     pkg_dicts = []
     query = model.Session.query(model.Package)\
                 .filter_by(state='active')\
-                .order_by(model.Package.title)
+                .order_by(model.Package.title)\
+                .options(selectinload(model.Package.resources_all))
     if organization:
         query = lib.filter_by_organizations(query, organization,
                                         include_sub_organizations)
+    extras_by_pkg = _load_extras(('unpublished',))
     for pkg in query.all():
+        pkg_extras = extras_by_pkg.get(pkg.id, {})
         if len(pkg.resources) != 0 or \
-                pkg.extras.get('unpublished', '').lower() == 'true':
+                pkg_extras.get('unpublished', '').lower() == 'true':
             continue
         deleted, url = last_resource_deleted(pkg)
         pkg_dict = OrderedDict((
@@ -261,40 +279,29 @@ def licence_report(organization, include_sub_organizations=False):
     organisation specified, and optionally sub organizations.
     '''
     # Get packages
+    query = model.Session.query(model.Package)\
+                .filter_by(state='active')
     if organization:
         top_org = model.Group.by_name(organization)
         if not top_org:
             raise p.toolkit.ObjectNotFound('Publisher not found')
-
-        if include_sub_organizations:
-            orgs = lib.go_down_tree(top_org)
-        else:
-            orgs = [top_org]
-        pkgs = set()
-        for org in orgs:
-            org_pkgs = model.Session.query(model.Package)\
-                            .filter_by(state='active')
-            org_pkgs = lib.filter_by_organizations(
-                org_pkgs, organization,
-                include_sub_organizations=False)\
-                .all()
-            pkgs |= set(org_pkgs)
-    else:
-        pkgs = model.Session.query(model.Package)\
-                    .filter_by(state='active')\
-                    .all()
+        query = lib.filter_by_organizations(query, organization,
+                                            include_sub_organizations)
+    pkgs = query.all()
 
     # Get their licences
     packages_by_licence = collections.defaultdict(list)
     rows = []
     num_pkgs = 0
+    extras_by_pkg = _load_extras(('unpublished', 'licence'))
     for pkg in pkgs:
-        if asbool(pkg.extras.get('unpublished')) is True:
+        pkg_extras = extras_by_pkg.get(pkg.id, {})
+        if asbool(pkg_extras.get('unpublished')) is True:
             # Ignore unpublished datasets
             continue
         licence_tuple = (pkg.license_id or '',
                          pkg.license.title if pkg.license else '',
-                         pkg.extras.get('licence', ''))
+                         pkg_extras.get('licence', ''))
         packages_by_licence[licence_tuple].append((pkg.name, pkg.title))
         num_pkgs += 1
 
@@ -346,7 +353,8 @@ def pdf_datasets_report(organization, include_sub_organizations=False):
     '''
     # Get packages
     query = model.Session.query(model.Package)\
-                .filter_by(state='active')
+                .filter_by(state='active')\
+                .options(selectinload(model.Package.resources_all))
     if organization:
         query = lib.filter_by_organizations(query, organization,
                                         include_sub_organizations)
@@ -356,10 +364,9 @@ def pdf_datasets_report(organization, include_sub_organizations=False):
     num_datasets_published = 0
     num_datasets_only_pdf = 0
     packages = []
-    # use yield_per, otherwise memory use just goes up til the script is killed
-    # by the os.
+    extras_by_pkg = _load_extras(('unpublished',))
     for pkg in pkgs:
-        if p.toolkit.asbool(pkg.extras.get('unpublished')):
+        if p.toolkit.asbool(extras_by_pkg.get(pkg.id, {}).get('unpublished')):
             continue
         num_datasets_published += 1
 
@@ -418,7 +425,8 @@ def html_datasets_report(organization, include_sub_organizations=False):
 
     # Get packages
     query = model.Session.query(model.Package)\
-                .filter_by(state='active')
+                .filter_by(state='active')\
+                .options(selectinload(model.Package.resources_all))
     if organization:
         query = lib.filter_by_organizations(query, organization,
                                         include_sub_organizations)
@@ -428,10 +436,9 @@ def html_datasets_report(organization, include_sub_organizations=False):
     num_datasets_published = 0
     num_datasets_only_html = 0
     datasets_only_html = []
-    # use yield_per, otherwise memory use just goes up til the script is killed
-    # by the os.
+    extras_by_pkg = _load_extras(('unpublished',))
     for pkg in pkgs:
-        if p.toolkit.asbool(pkg.extras.get('unpublished')):
+        if p.toolkit.asbool(extras_by_pkg.get(pkg.id, {}).get('unpublished')):
             continue
         num_datasets_published += 1
 
