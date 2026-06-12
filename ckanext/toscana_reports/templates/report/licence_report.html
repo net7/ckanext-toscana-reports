@@ -1,34 +1,64 @@
+{% if section is not defined or section != 'table' %}
 <div class="rtds-stats-box">
-  <p class="rtds-stats-box__main">Dataset: {{ data['num_datasets'] }}</p>
-  <p>Licenze: {{ data['num_licences'] }}</p>
+  <p class="rtds-stats-box__main">Licenze censite: {{ data['num_licences'] }} tipologie su {{ data['num_datasets'] }} dataset</p>
   <p class="rtds-stats-box__note">I Dataset non pubblicati sono esclusi da questo report</p>
 </div>
+{% endif %}
 
+{% if section is not defined or section != 'stats' %}
 <div class="rtds-table-wrapper">
   <table class="rtds-report-table" id="report-table" aria-label="Report licenze">
     <thead>
       <tr>
         <th scope="col">Licenza</th>
-        <th scope="col">Dataset</th>
+        <th scope="col">Tipo</th>
+        <th scope="col">N. dataset</th>
+        <th scope="col">Distribuzione</th>
+        <th scope="col">%</th>
+        <th scope="col">Dettagli</th>
       </tr>
     </thead>
     <tbody>
       {% for row_dict in data['table'] %}
+      {% set lid = (row_dict['license_id'] or '') | lower %}
+      {% set n = row_dict['dataset_names'].split() | length %}
+      {% set pct = ((n / data['num_datasets']) * 100) | round(1) if data['num_datasets'] else 0 %}
+      {% set is_partial = not lid or lid == 'notspecified' %}
+      {% set open_prefixes = ['cc-', 'cc0', 'cc-zero', 'iodl', 'odc-', 'uk-ogl', 'other-open', 'other-pd'] %}
+      {% set is_open = not is_partial and (
+          lid.startswith('cc-') or lid in ['cc-zero', 'cc0'] or
+          lid.startswith('iodl') or lid.startswith('odc-') or
+          lid == 'uk-ogl' or lid == 'other-open' or lid == 'other-pd' or lid == 'other-at'
+      ) %}
       <tr>
-        <td>{{ row_dict['license_title'] }}{% if not row_dict['license_title'] and row_dict['licence'] %} (Custom){% endif %}</td>
+        <td>{{ row_dict['license_title'] or 'Licenza non specificata' }}</td>
         <td>
-          {% set names = row_dict['dataset_names'].split() %}
-          {% set titles = row_dict['dataset_titles'].split('|') %}
-          {% set truncate = 10 %}
-          {{ titles|length }}:
-          {% for name in names[:truncate] %}
-            <a href="{{ h.url_for('dataset.read', id=name) }}">{{ titles[loop.index0] }}</a>
-            {% if not loop.last or names|length > truncate %}&nbsp;{% endif %}
-          {% endfor %}
-          {% if names|length > truncate %}…{% endif %}
+          {% if is_partial %}
+            <span class="rtds-licence-badge rtds-licence-badge--partial">Parziale</span>
+          {% elif is_open %}
+            <span class="rtds-licence-badge rtds-licence-badge--open">Aperta</span>
+          {% else %}
+            <span class="rtds-licence-badge rtds-licence-badge--closed">Chiusa</span>
+          {% endif %}
+        </td>
+        <td><strong>{{ n }}</strong></td>
+        <td>
+          <div class="rtds-prog-wrap">
+            <div class="rtds-prog-fill" style="width:{{ pct }}%"></div>
+          </div>
+        </td>
+        <td>{{ pct }}%</td>
+        <td>
+          {% if lid and lid != 'notspecified' %}
+            <a href="{{ h.url_for('dataset.search', license_id=row_dict['license_id']) }}" class="rtds-download-link">Dataset →</a>
+          {% else %}
+            —
+          {% endif %}
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+<p class="rtds-table-count">Totale dataset censiti: <strong>{{ data['num_datasets'] }}</strong></p>
+{% endif %}

@@ -1,9 +1,11 @@
+{% if section is not defined or section != 'table' %}
 <div class="rtds-stats-box">
   <p class="rtds-stats-box__main">Dataset senza risorse: {{ data['table']|length }}</p>
-  <p>"URL ultima risorsa" è vuoto se il dataset non ha uno storico associato.</p>
   <p class="rtds-stats-box__note">La lista completa dei dataset è scaricabile in formato JSON e CSV</p>
 </div>
+{% endif %}
 
+{% if section is not defined or section != 'stats' %}
 <div class="rtds-table-wrapper">
   <table class="rtds-report-table tablesorter" id="report-table" aria-label="Elenco dataset senza risorse">
     <thead>
@@ -12,8 +14,6 @@
         <th scope="col">Note</th>
         <th scope="col">Data creazione</th>
         <th scope="col">Data modifica</th>
-        <th scope="col">Data ultima risorsa cancellata</th>
-        <th scope="col">URL ultima risorsa</th>
       </tr>
     </thead>
     <tbody>
@@ -23,17 +23,10 @@
         <td>{{ dataset['dataset_notes'] or '—' }}</td>
         <td>{{ h.render_datetime(dataset['metadata created'], date_format='%d/%m/%Y') }}</td>
         <td>{{ h.render_datetime(dataset['metadata modified'], date_format='%d/%m/%Y') }}</td>
-        <td>{{ h.render_datetime(dataset['last resource deleted'], date_format='%d/%m/%Y') }}</td>
-        <td>
-          {% if dataset['last resource url'] %}
-            <a href="{{ dataset['last resource url'] }}" style="overflow-wrap:break-word;word-break:break-all;">{{ dataset['last resource url'] }}</a>
-          {% else %}
-            —
-          {% endif %}
-        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 <p class="rtds-table-count">Totale: <strong>{{ data['table']|length }}</strong> dataset</p>
+{% endif %}

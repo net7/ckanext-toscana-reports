@@ -1,9 +1,12 @@
+{% if section is not defined or section != 'table' %}
 <div class="rtds-stats-box">
   <p class="rtds-stats-box__main">Dataset in PDF: {{ data['num_datasets_only_pdf'] }} / {{ data['num_datasets_published'] }} ({{ '{:.0%}'.format(data['num_datasets_only_pdf'] / data['num_datasets_published']) if data['num_datasets_published'] else '0%' }})</p>
   <p>Publisher con dataset esclusivamente in PDF: {{ table|length }}</p>
   <p class="rtds-stats-box__note">La lista completa dei dataset è scaricabile in formato JSON e CSV</p>
 </div>
+{% endif %}
 
+{% if section is not defined or section != 'stats' %}
 <div class="rtds-table-wrapper">
   <table class="rtds-report-table tablesorter" id="report-table" aria-label="Elenco dataset PDF">
     <thead>
@@ -27,3 +30,4 @@
   </table>
 </div>
 <p class="rtds-table-count">Totale: <strong>{{ data['table']|length }}</strong> dataset</p>
+{% endif %}
